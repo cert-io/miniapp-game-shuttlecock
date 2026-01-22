@@ -103,7 +103,14 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
             const stored = localStorage.getItem('cert_credentials');
             if (!stored) return 'Wallet: (not logged in)';
             const parsed = JSON.parse(stored) as { account?: string };
-            return `Wallet: ${parsed.account ?? '(unknown)'}`;
+            const account = parsed.account ?? '';
+            if (!account || !account.startsWith('0x') || account.length < 12) {
+              return `Wallet: ${account || '(unknown)'}`;
+            }
+            // 0x + 5자리 + ... + 마지막 5자리
+            const head = account.slice(0, 2 + 5);
+            const tail = account.slice(-5);
+            return `Wallet: ${head}...${tail}`;
           } catch {
             return 'Wallet: (invalid credentials)';
           }

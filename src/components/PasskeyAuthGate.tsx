@@ -20,25 +20,6 @@ type PasskeyAuthGateProps = {
   children: React.ReactNode;
 };
 
-const isDesktopBrowser = (): boolean => {
-  if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent ?? "";
-
-  const isMobile =
-    /Android/i.test(ua) ||
-    /iPhone/i.test(ua) ||
-    /iPad/i.test(ua) ||
-    /iPod/i.test(ua);
-
-  const isDesktop =
-    /Windows NT/i.test(ua) ||
-    /Macintosh/i.test(ua) ||
-    /X11/i.test(ua) ||
-    (/Linux/i.test(ua) && !/Android/i.test(ua));
-
-  return isDesktop && !isMobile;
-};
-
 const buildRandomChallenge = (): Hex => {
   const bytes = new Uint8Array(32);
   window.crypto.getRandomValues(bytes);
@@ -143,16 +124,16 @@ export const PasskeyAuthGate: React.FC<PasskeyAuthGateProps> = ({
       return;
     }
 
-    // PC(데스크탑) 환경에서는 임시로 패스키 로그인 스킵
-    // - 앱(Flutter WebView)에서는 기존처럼 인증을 진행
-    if (!isFlutterInAppWebView && isDesktopBrowser()) {
+    // 개발 서버(npm run dev)에서는 자동 패스키 인증 요청을 스킵
+    // - 운영/배포 빌드에서는 기존처럼 자동 인증을 진행
+    if (import.meta.env.DEV) {
       setState("authed");
       return;
     }
 
     // 앱 진입 시 자동으로 패스키 인증 요청
     void authenticate();
-  }, [authenticate, hasCredentials, isFlutterInAppWebView]);
+  }, [authenticate, hasCredentials]);
 
   const overlayStyle = useMemo<React.CSSProperties>(
     () => ({
