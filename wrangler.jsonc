@@ -1,0 +1,15 @@
+{
+  // Cloudflare Workers 설정
+  // - Vite 빌드 산출물(dist)을 Workers Assets로 서빙
+  // - SPA 라우팅을 위해 404일 때 index.html로 fallback
+  "name": "miniapp-game-shuttlecock",
+  // Windows 로컬 런타임(workerd) 호환을 위해, 현재 런타임이 지원하는 날짜로 설정
+  // (Wrangler가 경고로 알려준 최신 지원 날짜)
+  "compatibility_date": "2025-07-18",
+  "main": "worker/index.ts",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  }
+}
+
