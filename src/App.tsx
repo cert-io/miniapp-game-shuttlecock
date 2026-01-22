@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo, useLayoutEffect } from 'react';
 import { Bird as BirdType, Pipe as PipeType, Coin as CoinType, GameState } from './types/game';
-import { GAME_CONFIG, GAME_WIDTH, GAME_HEIGHT } from './constants/gameConfig';
+import { GAME_CONFIG } from './constants/gameConfig';
 import { useGameLoop } from './hooks/useGameLoop';
 import { useCollision } from './hooks/useCollision';
 import { useSound } from './hooks/useSound';
