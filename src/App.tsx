@@ -4,7 +4,7 @@ import { GAME_CONFIG } from './constants/gameConfig';
 import { useGameLoop } from './hooks/useGameLoop';
 import { useCollision } from './hooks/useCollision';
 import { useSound } from './hooks/useSound';
-import { executeUseFrom } from './sdk/asset1155';
+import { executeCheck, executeUseFrom } from './sdk/asset1155';
 import { Shuttlecock } from './components/Shuttlecock';
 import { Pipe } from './components/Pipe';
 import { Coin } from './components/Coin';
@@ -23,6 +23,8 @@ const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>('ready');
   const [gameMode, setGameMode] = useState<'normal' | 'weekly' | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [weeklyUseState, setWeeklyUseState] = useState<'idle' | 'checking' | 'using' | 'error'>('idle');
+  const [weeklyUseError, setWeeklyUseError] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [coinScore, setCoinScore] = useState(0);
   const [bird, setBird] = useState<BirdType>({
@@ -120,7 +122,7 @@ const App: React.FC = () => {
     setSeedInfo({ seed });
   }, []);
 
-  const consumeWeeklyChallengeToken = useCallback(async () => {
+  const getWeeklyChallengeParams = useCallback(() => {
     const impl = import.meta.env.VITE_1155_IMPLEMENTATION_ADDRESS;
     if (!impl || !impl.startsWith('0x')) {
       throw new Error('VITE_1155_IMPLEMENTATION_ADDRESS 가 설정되어 있지 않습니다.');
@@ -137,12 +139,12 @@ const App: React.FC = () => {
     const holder = parsed.account;
     if (!holder || !holder.startsWith('0x')) throw new Error('Invalid holder address');
 
-    await executeUseFrom({
+    return {
       implementationAddress: impl as any,
       holder: holder as any,
       id: tokenId,
       amount,
-    });
+    };
   }, []);
 
   // 게임 시작(일반): 현재 UTC 연/월/일/시간 기반 시드
@@ -154,11 +156,41 @@ const App: React.FC = () => {
     setGameState('playing');
   }, [ensureSeed, resetGame]);
 
-  // 주간 도전: Use 성공 → 3,2,1 → 게임 시작
+  // 주간 도전: Check 성공 → Use 성공 → 3,2,1 → 게임 시작
   const startWeeklyChallenge = useCallback(async () => {
     setGameMode('weekly');
+    setWeeklyUseState('checking');
+    setWeeklyUseError(null);
 
-    await consumeWeeklyChallengeToken();
+    try {
+      const params = getWeeklyChallengeParams();
+
+      // 1) Check
+      await executeCheck({
+        implementationAddress: params.implementationAddress,
+        holder: params.holder,
+        id: params.id,
+        amount: params.amount,
+      });
+
+      // 2) Use
+      setWeeklyUseState('using');
+      await executeUseFrom({
+        implementationAddress: params.implementationAddress,
+        holder: params.holder,
+        id: params.id,
+        amount: params.amount,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setWeeklyUseState('error');
+      setWeeklyUseError(msg);
+      // 시작 화면으로 복귀
+      setCountdown(null);
+      setGameState('ready');
+      setGameMode(null);
+      return;
+    }
 
     const seed = getWeeklySeedUTC();
     ensureSeed(seed);
@@ -166,7 +198,8 @@ const App: React.FC = () => {
 
     setCountdown(3);
     setGameState('countdown');
-  }, [consumeWeeklyChallengeToken, ensureSeed, resetGame]);
+    setWeeklyUseState('idle');
+  }, [ensureSeed, getWeeklyChallengeParams, resetGame]);
 
   // countdown 진행
   useEffect(() => {
@@ -495,6 +528,100 @@ const App: React.FC = () => {
             onExit={exitToStart}
             seed={seedInfo.seed}
           />
+
+          {/* 주간 도전 Use 처리 오버레이 (로딩/에러) */}
+          {weeklyUseState !== 'idle' && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 60,
+                backgroundColor: 'rgba(0,0,0,0.55)',
+                padding: 24,
+                textAlign: 'center',
+                color: 'white'
+              }}
+            >
+              {weeklyUseState === 'checking' && (
+                <>
+                  <div style={{ fontSize: 20, fontWeight: 'bold' }}>
+                    주간 도전 자격 확인 중…
+                  </div>
+                  <div style={{ marginTop: 10, fontSize: 13, opacity: 0.9 }}>
+                    Check 성공 후 티켓을 사용(Use)합니다.
+                  </div>
+                </>
+              )}
+
+              {weeklyUseState === 'using' && (
+                <>
+                  <div style={{ fontSize: 20, fontWeight: 'bold' }}>
+                    주간 도전 티켓 사용 중…
+                  </div>
+                  <div style={{ marginTop: 10, fontSize: 13, opacity: 0.9 }}>
+                    패스키 인증/릴레이 처리가 완료되면 카운트다운 후 시작합니다.
+                  </div>
+                </>
+              )}
+
+              {weeklyUseState === 'error' && (
+                <>
+                  <div style={{ fontSize: 20, fontWeight: 'bold' }}>
+                    주간 도전 티켓 사용 실패
+                  </div>
+                  {weeklyUseError && (
+                    <div style={{ marginTop: 10, fontSize: 13, opacity: 0.9, maxWidth: 520 }}>
+                      {weeklyUseError}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+                    <button
+                      type="button"
+                      onClick={() => void startWeeklyChallenge()}
+                      style={{
+                        fontSize: 18,
+                        padding: '12px 18px',
+                        borderRadius: 10,
+                        border: 'none',
+                        cursor: 'pointer',
+                        backgroundColor: '#2196F3',
+                        color: 'white',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      다시 시도
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWeeklyUseState('idle');
+                        setWeeklyUseError(null);
+                      }}
+                      style={{
+                        fontSize: 18,
+                        padding: '12px 18px',
+                        borderRadius: 10,
+                        border: 'none',
+                        cursor: 'pointer',
+                        backgroundColor: '#607D8B',
+                        color: 'white',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      닫기
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           {/* 주간 도전 카운트다운 오버레이 */}
           {gameState === 'countdown' && countdown !== null && (
