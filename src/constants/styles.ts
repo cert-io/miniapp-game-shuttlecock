@@ -5,19 +5,20 @@ export const gameContainerStyle: CSSProperties = {
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  minHeight: '100vh',
+  width: '100vw',
+  height: '100vh',
   backgroundColor: '#282c34',
   touchAction: 'none',
   userSelect: 'none',
   WebkitUserSelect: 'none',
-  WebkitTouchCallout: 'none'
+  WebkitTouchCallout: 'none',
+  overflow: 'hidden'
 };
 
 export const gameCanvasStyle: CSSProperties = {
   position: 'relative',
   overflow: 'hidden',
-  boxShadow: '0 10px 50px rgba(0,0,0,0.5)',
-  borderRadius: 10
+  transition: 'transform 0.3s ease-out'
 };
 
 // 배경 구름 효과

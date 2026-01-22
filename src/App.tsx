@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo, useLayoutEffect } from 'react';
 import { Bird as BirdType, Pipe as PipeType, Coin as CoinType, GameState } from './types/game';
 import { GAME_CONFIG, GAME_WIDTH, GAME_HEIGHT } from './constants/gameConfig';
 import { useGameLoop } from './hooks/useGameLoop';
@@ -44,6 +44,10 @@ const App: React.FC = () => {
   // 배드민턴 타격 사운드
   const hitSound = useSound('/hit.mp3');
 
+  // 반응형 스케일링
+  const [scale, setScale] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   // 시드 초기화
   useEffect(() => {
     const dailySeed = getDailySeed();
@@ -53,6 +57,32 @@ const App: React.FC = () => {
     const info = getTodaySeedInfo();
     setSeedInfo(info);
     console.log(`🎮 Daily Seed: ${info.seed} (${info.date} UTC)`);
+  }, []);
+
+  // 반응형 스케일 계산
+  useLayoutEffect(() => {
+    const updateScale = () => {
+      if (!containerRef.current) return;
+      
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      
+      // 게임 비율 유지하면서 화면에 맞추기
+      const scaleX = windowWidth / GAME_WIDTH;
+      const scaleY = windowHeight / GAME_HEIGHT;
+      const newScale = Math.min(scaleX, scaleY);
+      
+      setScale(newScale);
+    };
+
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    window.addEventListener('orientationchange', updateScale);
+
+    return () => {
+      window.removeEventListener('resize', updateScale);
+      window.removeEventListener('orientationchange', updateScale);
+    };
   }, []);
 
   // cleanup: 타격 효과 타이머
@@ -333,11 +363,13 @@ const App: React.FC = () => {
     ...gameCanvasStyle,
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
-    backgroundColor: '#4EC0CA'
-  }), []);
+    backgroundColor: '#4EC0CA',
+    transform: `scale(${scale})`,
+    transformOrigin: 'center center'
+  }), [scale]);
 
   return (
-    <div style={gameContainerStyle}>
+    <div ref={containerRef} style={gameContainerStyle}>
       <div style={canvasStyle}>
         {/* 배경 (구름 효과) */}
         <div style={cloudBackgroundStyle} />
