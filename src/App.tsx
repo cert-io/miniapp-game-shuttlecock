@@ -10,6 +10,7 @@ import { Coin } from './components/Coin';
 import { Ground } from './components/Ground';
 import { GameUI } from './components/GameUI';
 import { HitEffect } from './components/HitEffect';
+import { PasskeyAuthGate } from './components/PasskeyAuthGate';
 import { SeededRandom, getDailySeed, getTodaySeedInfo } from './utils/seededRandom';
 import { gameContainerStyle, gameCanvasStyle, cloudBackgroundStyle } from './constants/styles';
 
@@ -369,40 +370,42 @@ const App: React.FC = () => {
   }), [gameWidth, gameHeight]);
 
   return (
-    <div style={gameContainerStyle}>
-      <div style={canvasStyle}>
-        {/* 배경 (구름 효과) */}
-        <div style={cloudBackgroundStyle} />
+    <PasskeyAuthGate>
+      <div style={gameContainerStyle}>
+        <div style={canvasStyle}>
+          {/* 배경 (구름 효과) */}
+          <div style={cloudBackgroundStyle} />
 
-        {/* 파이프 렌더링 */}
-        {pipes.map(pipe => (
-          <Pipe key={pipe.id} pipe={pipe} gameHeight={gameHeight} />
-        ))}
+          {/* 파이프 렌더링 */}
+          {pipes.map(pipe => (
+            <Pipe key={pipe.id} pipe={pipe} gameHeight={gameHeight} />
+          ))}
 
-        {/* 코인 렌더링 */}
-        {coins.map(coin => (
-          <Coin key={coin.id} coin={coin} />
-        ))}
+          {/* 코인 렌더링 */}
+          {coins.map(coin => (
+            <Coin key={coin.id} coin={coin} />
+          ))}
 
-        {/* 셔틀콕 렌더링 */}
-        <Shuttlecock bird={bird} />
+          {/* 셔틀콕 렌더링 */}
+          <Shuttlecock bird={bird} />
 
-        {/* 타격 효과 */}
-        <HitEffect position={bird.position} visible={showHitEffect} />
+          {/* 타격 효과 */}
+          <HitEffect position={bird.position} visible={showHitEffect} />
 
-        {/* 땅 렌더링 */}
-        <Ground offset={groundOffset} gameWidth={gameWidth} gameHeight={gameHeight} />
+          {/* 땅 렌더링 */}
+          <Ground offset={groundOffset} gameWidth={gameWidth} gameHeight={gameHeight} />
 
-        {/* UI 렌더링 */}
-        <GameUI 
-          score={score}
-          coinScore={coinScore}
-          gameState={gameState} 
-          onStart={startGame}
-          dailySeed={seedInfo.seed}
-        />
+          {/* UI 렌더링 */}
+          <GameUI 
+            score={score}
+            coinScore={coinScore}
+            gameState={gameState} 
+            onStart={startGame}
+            dailySeed={seedInfo.seed}
+          />
+        </div>
       </div>
-    </div>
+    </PasskeyAuthGate>
   );
 };
 

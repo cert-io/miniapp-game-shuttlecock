@@ -12,7 +12,7 @@ export const GAME_CONFIG: GameConfig = {
   pipeSpawnInterval: 1500,
   groundHeight: 100,
   coinSize: 20,
-  coinProbability: 0.5,   // 50% 확률로 코인 생성
+  coinProbability: 0.25,  // 25% 확률로 코인 생성
   difficultyIncreaseRate: 0.1 // 파이프 5개 통과마다 난이도 증가
 };
 
