@@ -149,16 +149,25 @@ export async function relayExecuteWithWebAuthn(
     body: JSON.stringify(payload),
   });
 
-  const data = await parseApiResponse<{ tx: string }>(
+  const data = await parseApiResponse<{ tx?: string; txHash?: string; hash?: string }>(
     resp,
     `Relayer ${endpoint} failed`
   );
 
-  if (!data?.tx) {
-    throw new Error("Relayer response missing tx hash");
+  const tx =
+    data?.tx ??
+    // 일부 relayer가 다른 키를 쓰는 경우 방어
+    (data as { txHash?: string }).txHash ??
+    (data as { hash?: string }).hash;
+
+  if (!tx || typeof tx !== "string") {
+    const keys = data && typeof data === "object" ? Object.keys(data) : [];
+    throw new Error(
+      `Relayer response missing tx hash (endpoint=${endpoint}, keys=${keys.join(",") || "none"})`
+    );
   }
 
-  return data.tx as string;
+  return tx as string;
 }
 
 export async function fetchMetadataCommitment(metadata: Record<string, unknown>) {
