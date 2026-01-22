@@ -1,29 +1,31 @@
 import React, { memo, useMemo } from 'react';
-import { GAME_CONFIG, GAME_HEIGHT, GAME_WIDTH } from '../constants/gameConfig';
+import { GAME_CONFIG } from '../constants/gameConfig';
 
 interface GroundProps {
   offset: number;
+  gameWidth: number;
+  gameHeight: number;
 }
 
-const GroundComponent: React.FC<GroundProps> = ({ offset }) => {
+const GroundComponent: React.FC<GroundProps> = ({ offset, gameWidth, gameHeight }) => {
   const height = GAME_CONFIG.groundHeight;
-  const top = GAME_HEIGHT - height;
+  const top = gameHeight - height;
 
   // 컨테이너 스타일 메모이제이션
   const containerStyle = useMemo<React.CSSProperties>(() => ({
     position: 'absolute',
     left: 0,
     top: top,
-    width: GAME_WIDTH,
+    width: gameWidth,
     height: height,
     overflow: 'hidden'
-  }), [height, top]);
+  }), [height, top, gameWidth]);
 
   // 땅 패턴 스타일 (offset만 동적)
   const groundPatternStyle = useMemo<React.CSSProperties>(() => ({
     position: 'absolute',
     top: 0,
-    width: GAME_WIDTH * 3,
+    width: gameWidth * 3,
     height: height,
     background: `repeating-linear-gradient(
       90deg,
@@ -34,7 +36,7 @@ const GroundComponent: React.FC<GroundProps> = ({ offset }) => {
     )`,
     borderTop: '4px solid #8B4513',
     willChange: 'left'
-  }), [height]);
+  }), [height, gameWidth]);
 
   return (
     <div style={containerStyle}>
@@ -42,7 +44,7 @@ const GroundComponent: React.FC<GroundProps> = ({ offset }) => {
       <div
         style={{
           ...groundPatternStyle,
-          left: -(offset % GAME_WIDTH)
+          left: -(offset % gameWidth)
         }}
       >
         {/* 잔디 효과 */}

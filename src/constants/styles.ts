@@ -17,8 +17,7 @@ export const gameContainerStyle: CSSProperties = {
 
 export const gameCanvasStyle: CSSProperties = {
   position: 'relative',
-  overflow: 'hidden',
-  transition: 'transform 0.3s ease-out'
+  overflow: 'hidden'
 };
 
 // 배경 구름 효과

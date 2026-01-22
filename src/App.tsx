@@ -14,11 +14,15 @@ import { SeededRandom, getDailySeed, getTodaySeedInfo } from './utils/seededRand
 import { gameContainerStyle, gameCanvasStyle, cloudBackgroundStyle } from './constants/styles';
 
 const App: React.FC = () => {
+  // 동적 게임 크기
+  const [gameWidth, setGameWidth] = useState(window.innerWidth);
+  const [gameHeight, setGameHeight] = useState(window.innerHeight);
+  
   const [gameState, setGameState] = useState<GameState>('ready');
   const [score, setScore] = useState(0);
   const [coinScore, setCoinScore] = useState(0);
   const [bird, setBird] = useState<BirdType>({
-    position: { x: GAME_WIDTH / 3, y: GAME_HEIGHT / 2 },
+    position: { x: gameWidth / 3, y: gameHeight / 2 },
     velocity: { x: 0, y: 0 },
     rotation: 0
   });
@@ -39,14 +43,10 @@ const App: React.FC = () => {
   const lastPipeSpawn = useRef(0);
   const seededRandom = useRef<SeededRandom | null>(null);
   const [seedInfo, setSeedInfo] = useState({ seed: 0, date: '' });
-  const { checkCollision } = useCollision();
+  const { checkCollision } = useCollision(gameHeight);
   
   // 배드민턴 타격 사운드
   const hitSound = useSound('/hit.mp3');
-
-  // 반응형 스케일링
-  const [scale, setScale] = useState(1);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   // 시드 초기화
   useEffect(() => {
@@ -59,31 +59,33 @@ const App: React.FC = () => {
     console.log(`🎮 Daily Seed: ${info.seed} (${info.date} UTC)`);
   }, []);
 
-  // 반응형 스케일 계산
+  // 화면 크기 변경 감지
   useLayoutEffect(() => {
-    const updateScale = () => {
-      if (!containerRef.current) return;
+    const updateSize = () => {
+      const newWidth = window.innerWidth;
+      const newHeight = window.innerHeight;
       
-      const windowWidth = window.innerWidth;
-      const windowHeight = window.innerHeight;
+      setGameWidth(newWidth);
+      setGameHeight(newHeight);
       
-      // 게임 비율 유지하면서 화면에 맞추기
-      const scaleX = windowWidth / GAME_WIDTH;
-      const scaleY = windowHeight / GAME_HEIGHT;
-      const newScale = Math.min(scaleX, scaleY);
-      
-      setScale(newScale);
+      // 새 화면 크기로 새 위치 재설정 (게임 진행 중이 아닐 때만)
+      if (gameState === 'ready') {
+        setBird(prev => ({
+          ...prev,
+          position: { x: newWidth / 3, y: newHeight / 2 }
+        }));
+      }
     };
 
-    updateScale();
-    window.addEventListener('resize', updateScale);
-    window.addEventListener('orientationchange', updateScale);
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    window.addEventListener('orientationchange', updateSize);
 
     return () => {
-      window.removeEventListener('resize', updateScale);
-      window.removeEventListener('orientationchange', updateScale);
+      window.removeEventListener('resize', updateSize);
+      window.removeEventListener('orientationchange', updateSize);
     };
-  }, []);
+  }, [gameState]);
 
   // cleanup: 타격 효과 타이머
   useEffect(() => {
@@ -97,7 +99,7 @@ const App: React.FC = () => {
   // 게임 초기화
   const resetGame = useCallback(() => {
     setBird({
-      position: { x: GAME_WIDTH / 3, y: GAME_HEIGHT / 2 },
+      position: { x: gameWidth / 3, y: gameHeight / 2 },
       velocity: { x: 0, y: 0 },
       rotation: 0
     });
@@ -117,7 +119,7 @@ const App: React.FC = () => {
       const dailySeed = getDailySeed();
       seededRandom.current.setSeed(dailySeed);
     }
-  }, []);
+  }, [gameWidth, gameHeight]);
 
   // 게임 시작
   const startGame = useCallback(() => {
@@ -187,7 +189,7 @@ const App: React.FC = () => {
 
       // 점수 업데이트 및 난이도 증가
       newPipes.forEach(pipe => {
-        if (!pipe.passed && pipe.x + GAME_CONFIG.pipeWidth < GAME_WIDTH / 3) {
+        if (!pipe.passed && pipe.x + GAME_CONFIG.pipeWidth < gameWidth / 3) {
           pipe.passed = true;
           setScore(s => {
             const newScore = s + 1;
@@ -236,7 +238,7 @@ const App: React.FC = () => {
       if (!seededRandom.current) return; // 시드가 없으면 생성하지 않음
       
       const minGapY = 100;
-      const maxGapY = GAME_HEIGHT - GAME_CONFIG.groundHeight - currentPipeGap - 100;
+      const maxGapY = gameHeight - GAME_CONFIG.groundHeight - currentPipeGap - 100;
       
       // 시드 기반 난수 생성 (완전 재현 가능)
       const gapY = seededRandom.current.range(minGapY, maxGapY);
@@ -248,7 +250,7 @@ const App: React.FC = () => {
         ...prev,
         {
           id: pipeIdCounter.current++,
-          x: GAME_WIDTH,
+          x: gameWidth,
           gapY,
           passed: false,
           hasCoin
@@ -265,14 +267,14 @@ const App: React.FC = () => {
           ...prev,
           {
             id: coinIdCounter.current++,
-            x: GAME_WIDTH + GAME_CONFIG.pipeWidth / 2,
+            x: gameWidth + GAME_CONFIG.pipeWidth / 2,
             y: coinY,
             collected: false
           }
         ]);
       }
     }
-  }, []);
+  }, [gameWidth, gameHeight]);
 
   // 충돌 체크 및 코인 수집
   useEffect(() => {
@@ -361,22 +363,20 @@ const App: React.FC = () => {
   // 게임 캔버스 스타일 메모이제이션
   const canvasStyle = useMemo(() => ({
     ...gameCanvasStyle,
-    width: GAME_WIDTH,
-    height: GAME_HEIGHT,
-    backgroundColor: '#4EC0CA',
-    transform: `scale(${scale})`,
-    transformOrigin: 'center center'
-  }), [scale]);
+    width: gameWidth,
+    height: gameHeight,
+    backgroundColor: '#4EC0CA'
+  }), [gameWidth, gameHeight]);
 
   return (
-    <div ref={containerRef} style={gameContainerStyle}>
+    <div style={gameContainerStyle}>
       <div style={canvasStyle}>
         {/* 배경 (구름 효과) */}
         <div style={cloudBackgroundStyle} />
 
         {/* 파이프 렌더링 */}
         {pipes.map(pipe => (
-          <Pipe key={pipe.id} pipe={pipe} />
+          <Pipe key={pipe.id} pipe={pipe} gameHeight={gameHeight} />
         ))}
 
         {/* 코인 렌더링 */}
@@ -391,7 +391,7 @@ const App: React.FC = () => {
         <HitEffect position={bird.position} visible={showHitEffect} />
 
         {/* 땅 렌더링 */}
-        <Ground offset={groundOffset} />
+        <Ground offset={groundOffset} gameWidth={gameWidth} gameHeight={gameHeight} />
 
         {/* UI 렌더링 */}
         <GameUI 

@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { Bird, Pipe } from '../types/game';
-import { GAME_CONFIG, GAME_HEIGHT, COLLISION_PADDING } from '../constants/gameConfig';
+import { GAME_CONFIG, COLLISION_PADDING } from '../constants/gameConfig';
 
-export const useCollision = () => {
+export const useCollision = (gameHeight: number) => {
   const checkCollision = useCallback((bird: Bird, pipes: Pipe[]): boolean => {
     const birdLeft = bird.position.x - GAME_CONFIG.birdSize / 2 + COLLISION_PADDING;
     const birdRight = bird.position.x + GAME_CONFIG.birdSize / 2 - COLLISION_PADDING;
@@ -10,7 +10,7 @@ export const useCollision = () => {
     const birdBottom = bird.position.y + GAME_CONFIG.birdSize / 2 - COLLISION_PADDING;
 
     // 바닥 충돌 체크
-    if (birdBottom >= GAME_HEIGHT - GAME_CONFIG.groundHeight) {
+    if (birdBottom >= gameHeight - GAME_CONFIG.groundHeight) {
       return true;
     }
 
@@ -37,7 +37,7 @@ export const useCollision = () => {
     }
 
     return false;
-  }, []);
+  }, [gameHeight]);
 
   return { checkCollision };
 };

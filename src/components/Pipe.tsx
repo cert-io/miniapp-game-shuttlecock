@@ -1,9 +1,10 @@
 import React, { memo, useMemo } from 'react';
 import { Pipe as PipeType } from '../types/game';
-import { GAME_CONFIG, GAME_HEIGHT } from '../constants/gameConfig';
+import { GAME_CONFIG } from '../constants/gameConfig';
 
 interface PipeProps {
   pipe: PipeType;
+  gameHeight: number;
 }
 
 // 파이프 스타일 상수
@@ -24,7 +25,7 @@ const pipeCapStyle: React.CSSProperties = {
   borderRadius: '5px'
 };
 
-const PipeComponent: React.FC<PipeProps> = ({ pipe }) => {
+const PipeComponent: React.FC<PipeProps> = ({ pipe, gameHeight }) => {
   const { x, gapY } = pipe;
   const width = GAME_CONFIG.pipeWidth;
   const gap = GAME_CONFIG.pipeGap;
@@ -46,10 +47,10 @@ const PipeComponent: React.FC<PipeProps> = ({ pipe }) => {
     left: x,
     top: gapY + gap,
     width: width,
-    height: GAME_HEIGHT - gapY - gap - GAME_CONFIG.groundHeight,
+    height: gameHeight - gapY - gap - GAME_CONFIG.groundHeight,
     borderRadius: '5px 5px 0 0',
     boxShadow: 'inset 0 10px 20px rgba(0,0,0,0.2)'
-  }), [x, width, gapY, gap]);
+  }), [x, width, gapY, gap, gameHeight]);
 
   return (
     <>
