@@ -1,5 +1,6 @@
 import React, { memo, useCallback } from 'react';
 import { GameState } from '../types/game';
+import { useI18n } from '../i18n/useI18n';
 
 interface GameUIProps {
   score: number;
@@ -87,6 +88,8 @@ const buttonBaseStyle: React.CSSProperties = {
 };
 
 const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, onStart, onWeeklyChallenge, onExit, seed }) => {
+  const { t } = useI18n();
+
   // 버튼 상호작용 최적화
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.currentTarget.style.transform = 'scale(0.95)';
@@ -103,18 +106,18 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
         {(() => {
           try {
             const stored = localStorage.getItem('cert_credentials');
-            if (!stored) return 'Wallet: (not logged in)';
+            if (!stored) return `${t('wallet_label')}: ${t('wallet_not_logged_in')}`;
             const parsed = JSON.parse(stored) as { account?: string };
             const account = parsed.account ?? '';
             if (!account || !account.startsWith('0x') || account.length < 12) {
-              return `Wallet: ${account || '(unknown)'}`;
+              return `${t('wallet_label')}: ${account || t('wallet_unknown')}`;
             }
             // 0x + 5자리 + ... + 마지막 5자리
             const head = account.slice(0, 2 + 5);
             const tail = account.slice(-5);
-            return `Wallet: ${head}...${tail}`;
+            return `${t('wallet_label')}: ${head}...${tail}`;
           } catch {
-            return 'Wallet: (invalid credentials)';
+            return `${t('wallet_label')}: ${t('wallet_invalid')}`;
           }
         })()}
       </div>
@@ -139,7 +142,7 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
           userSelect: 'none'
         }}
       >
-        Coins: {coinScore}
+        {t('game_coins')}: {coinScore}
       </div>
 
       {/* 데일리 시드 정보 */}
@@ -160,7 +163,7 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
               textShadow: '3px 3px 0 #000'
             }}
           >
-            ShuttleCock
+            {t('game_title')}
           </h1>
           <p
             style={{
@@ -171,7 +174,7 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
               fontWeight: 'bold'
             }}
           >
-            매주 새로운 도전!
+            {t('game_tagline')}
           </p>
           <div style={{ display: 'flex', gap: 12 }}>
             <button
@@ -180,7 +183,7 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
               onMouseDown={handleMouseDown}
               onMouseUp={handleMouseUp}
             >
-              시작하기
+              {t('btn_start')}
             </button>
             <button
               onClick={onWeeklyChallenge}
@@ -188,7 +191,7 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
               onMouseDown={handleMouseDown}
               onMouseUp={handleMouseUp}
             >
-              주간 도전
+              {t('btn_weekly')}
             </button>
           </div>
           <p
@@ -199,7 +202,7 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
               textAlign: 'center'
             }}
           >
-            클릭 또는 터치
+            {t('game_hint_tap')}
           </p>
         </div>
       )}
@@ -215,7 +218,7 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
               textShadow: '3px 3px 0 #000'
             }}
           >
-            게임 오버!
+            {t('game_over')}
           </h2>
           <div style={{ marginBottom: 30, textAlign: 'center' }}>
             <p
@@ -226,7 +229,7 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
                 textShadow: '2px 2px 0 #000'
               }}
             >
-              점수: {score}
+              {t('game_score')}: {score}
             </p>
             <p
               style={{
@@ -235,7 +238,7 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
                 textShadow: '2px 2px 0 #000'
               }}
             >
-              Coins: {coinScore}
+              {t('game_coins')}: {coinScore}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
@@ -245,7 +248,7 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
               onMouseDown={handleMouseDown}
               onMouseUp={handleMouseUp}
             >
-              다시 시작
+              {t('btn_restart')}
             </button>
             <button
               onClick={onExit}
@@ -253,7 +256,7 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
               onMouseDown={handleMouseDown}
               onMouseUp={handleMouseUp}
             >
-              나가기
+              {t('btn_exit')}
             </button>
           </div>
         </div>

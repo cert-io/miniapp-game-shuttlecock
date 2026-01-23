@@ -6,6 +6,7 @@ import {
   saveCertCredentials,
   useFlutterInAppWebView,
 } from "../sdk/asset1155";
+import { useI18n } from "../i18n/useI18n";
 
 type AuthState = "checking" | "authenticating" | "authed" | "error";
 
@@ -45,6 +46,7 @@ const getStoredCredentials = () => {
 export const PasskeyAuthGate: React.FC<PasskeyAuthGateProps> = ({
   children,
 }) => {
+  const { t } = useI18n();
   const { flutterWebView, isFlutterInAppWebView } = useFlutterInAppWebView();
   const [state, setState] = useState<AuthState>("checking");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -61,7 +63,7 @@ export const PasskeyAuthGate: React.FC<PasskeyAuthGateProps> = ({
 
     if (!apiBase) {
       setState("error");
-      setErrorMessage("VITE_OFFCHAIN_INTERNAL_API_URL 환경변수가 설정되어 있지 않습니다.");
+      setErrorMessage(t("passkey_env_missing"));
       return;
     }
 
@@ -172,24 +174,24 @@ export const PasskeyAuthGate: React.FC<PasskeyAuthGateProps> = ({
       {(state === "checking" || state === "authenticating") && (
         <>
           <div style={{ fontSize: 18, fontWeight: 700 }}>
-            패스키 인증을 진행합니다…
+            {t("passkey_auth_in_progress")}
           </div>
           <div style={{ marginTop: 8, opacity: 0.85, fontSize: 13 }}>
-            인증이 완료되면 게임 시작 화면으로 이동합니다.
+            {t("passkey_auth_after_success")}
           </div>
         </>
       )}
 
       {state === "error" && (
         <>
-          <div style={{ fontSize: 18, fontWeight: 700 }}>인증에 실패했습니다</div>
+          <div style={{ fontSize: 18, fontWeight: 700 }}>{t("passkey_auth_failed")}</div>
           {errorMessage && (
             <div style={{ marginTop: 8, opacity: 0.85, fontSize: 13, maxWidth: 520 }}>
               {errorMessage}
             </div>
           )}
           <button type="button" style={buttonStyle} onClick={() => void authenticate()}>
-            패스키 인증 다시 시도
+            {t("passkey_auth_retry")}
           </button>
         </>
       )}
