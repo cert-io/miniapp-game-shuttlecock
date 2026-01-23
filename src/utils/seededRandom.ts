@@ -99,12 +99,16 @@ export const getDailySeed = (): number => {
  */
 export const getHourlySeedUTC = (): number => {
   const now = new Date();
+  return getHourlySeedUTCFromDate(now);
+};
+
+export const getHourlySeedUTCFromDate = (base: Date): number => {
   const utc = new Date(
     Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate(),
-      now.getUTCHours(),
+      base.getUTCFullYear(),
+      base.getUTCMonth(),
+      base.getUTCDate(),
+      base.getUTCHours(),
       0,
       0,
       0
@@ -128,11 +132,15 @@ export const getHourlySeedUTC = (): number => {
  */
 export const getWeeklySeedUTC = (): number => {
   const now = new Date();
-  const y = now.getUTCFullYear();
-  const m = now.getUTCMonth();
-  const d = now.getUTCDate();
+  return getWeeklySeedUTCFromDate(now);
+};
 
-  const dayOfWeek = now.getUTCDay(); // 0=Sun ... 1=Mon ... 6=Sat
+export const getWeeklySeedUTCFromDate = (base: Date): number => {
+  const y = base.getUTCFullYear();
+  const m = base.getUTCMonth();
+  const d = base.getUTCDate();
+
+  const dayOfWeek = base.getUTCDay(); // 0=Sun ... 1=Mon ... 6=Sat
   const daysSinceMonday = (dayOfWeek + 6) % 7; // Mon=0, Tue=1, ... Sun=6
 
   const monday = new Date(Date.UTC(y, m, d - daysSinceMonday, 0, 0, 0, 0));

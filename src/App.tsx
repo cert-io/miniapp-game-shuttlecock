@@ -19,12 +19,25 @@ import { GameUI } from './components/GameUI';
 import { HitEffect } from './components/HitEffect';
 import { PasskeyAuthGate } from './components/PasskeyAuthGate';
 import { Modal } from './components/Modal';
-import { SeededRandom, getHourlySeedUTC, getWeeklySeedUTC } from './utils/seededRandom';
+import {
+  SeededRandom,
+  getHourlySeedUTCFromDate,
+  getWeeklySeedUTCFromDate,
+} from './utils/seededRandom';
 import { gameContainerStyle, gameCanvasStyle, cloudBackgroundStyle } from './constants/styles';
 import { useI18n } from './i18n/useI18n';
 
 const App: React.FC = () => {
   const { t } = useI18n();
+  const appStartDateRef = useRef<Date>(new Date());
+  const hourlySeedAtAppStart = useMemo(
+    () => getHourlySeedUTCFromDate(appStartDateRef.current),
+    []
+  );
+  const weeklySeedAtAppStart = useMemo(
+    () => getWeeklySeedUTCFromDate(appStartDateRef.current),
+    []
+  );
   // 동적 게임 크기
   const [gameWidth, setGameWidth] = useState(window.innerWidth);
   const [gameHeight, setGameHeight] = useState(window.innerHeight);
@@ -65,7 +78,7 @@ const App: React.FC = () => {
   const coinIdCounter = useRef(0);
   const lastPipeSpawn = useRef(0);
   const seededRandom = useRef<SeededRandom | null>(null);
-  const [seedInfo, setSeedInfo] = useState({ seed: 0 });
+  const [seedInfo, setSeedInfo] = useState(() => ({ seed: hourlySeedAtAppStart }));
   const { checkCollision } = useCollision(gameHeight);
   
   // 배드민턴 타격 사운드
@@ -202,11 +215,10 @@ const App: React.FC = () => {
   // 게임 시작(일반): 현재 UTC 연/월/일/시간 기반 시드
   const startGame = useCallback(() => {
     setGameMode('normal');
-    const seed = getHourlySeedUTC();
-    ensureSeed(seed);
+    ensureSeed(hourlySeedAtAppStart);
     resetGame();
     setGameState('playing');
-  }, [ensureSeed, resetGame]);
+  }, [ensureSeed, hourlySeedAtAppStart, resetGame]);
 
   // 주간 도전: Check 성공 → Use 성공 → 3,2,1 → 게임 시작
   const startWeeklyChallenge = useCallback(async () => {
@@ -251,14 +263,20 @@ const App: React.FC = () => {
       return;
     }
 
-    const seed = getWeeklySeedUTC();
-    ensureSeed(seed);
+    ensureSeed(weeklySeedAtAppStart);
     resetGame();
 
     setCountdown(3);
     setGameState('countdown');
     setWeeklyUseState('idle');
-  }, [applyWeeklyError, ensureSeed, getWeeklyChallengeParams, resetGame, t]);
+  }, [
+    applyWeeklyError,
+    ensureSeed,
+    getWeeklyChallengeParams,
+    resetGame,
+    t,
+    weeklySeedAtAppStart,
+  ]);
 
   // countdown 진행
   useEffect(() => {
@@ -633,8 +651,7 @@ const App: React.FC = () => {
                                 amount: params.amount,
                               });
 
-                              const seed = getWeeklySeedUTC();
-                              ensureSeed(seed);
+                              ensureSeed(weeklySeedAtAppStart);
                               resetGame();
                               setCountdown(3);
                               setGameState('countdown');
