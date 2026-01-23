@@ -6,6 +6,7 @@ import {
 } from "../../lib/contracts";
 import { asset1155Abi } from "../../lib/abi/asset1155";
 import { retryOnInvalidSignature } from "../../lib/utils/webauthnRetry";
+import { SdkError, SdkErrorCode } from "../../lib/errors";
 
 export type ExecuteCheckParams = {
   implementationAddress: Address;
@@ -23,8 +24,12 @@ export type ExecuteCheckParams = {
  */
 export async function executeCheck(params: ExecuteCheckParams): Promise<string> {
   const credentials = getCertCredentials();
-  if (!credentials) throw new Error("No passkey registered");
-  if (!credentials.account?.startsWith("0x")) throw new Error("Invalid account");
+  if (!credentials) {
+    throw new SdkError({ code: SdkErrorCode.NO_CREDENTIALS, message: "No passkey registered" });
+  }
+  if (!credentials.account?.startsWith("0x")) {
+    throw new SdkError({ code: SdkErrorCode.INVALID_ACCOUNT, message: "Invalid account" });
+  }
 
   const account = credentials.account as Address;
   const x = BigInt(credentials.pubkeyX);

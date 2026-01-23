@@ -11,9 +11,16 @@ type ModalProps = {
   title: string;
   message: string;
   actions?: ModalAction[];
+  titleAlign?: "left" | "center";
 };
 
-export const Modal: React.FC<ModalProps> = ({ open, title, message, actions }) => {
+export const Modal: React.FC<ModalProps> = ({
+  open,
+  title,
+  message,
+  actions,
+  titleAlign = "left",
+}) => {
   const overlayStyle = useMemo<React.CSSProperties>(
     () => ({
       position: "fixed",
@@ -48,8 +55,9 @@ export const Modal: React.FC<ModalProps> = ({ open, title, message, actions }) =
       fontSize: 18,
       fontWeight: 800,
       marginBottom: 10,
+      textAlign: titleAlign,
     }),
-    []
+    [titleAlign]
   );
 
   const messageStyle = useMemo<React.CSSProperties>(
@@ -100,7 +108,7 @@ export const Modal: React.FC<ModalProps> = ({ open, title, message, actions }) =
     >
       <div style={cardStyle} onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}>
         <div style={titleStyle}>{title}</div>
-        <div style={messageStyle}>{message}</div>
+        {message.trim().length > 0 && <div style={messageStyle}>{message}</div>}
         {actions && actions.length > 0 && (
           <div style={{ display: "flex", gap: 12, marginTop: 14 }}>
             {actions.map((a) => (

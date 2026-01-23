@@ -183,17 +183,17 @@ export const PasskeyAuthGate: React.FC<PasskeyAuthGateProps> = ({
       )}
 
       {state === "error" && (
-        <>
+        <div style={{ width: "min(520px, 100%)", textAlign: "left" }}>
           <div style={{ fontSize: 18, fontWeight: 700 }}>{t("passkey_auth_failed")}</div>
           {errorMessage && (
-            <div style={{ marginTop: 8, opacity: 0.85, fontSize: 13, maxWidth: 520 }}>
+            <div style={{ marginTop: 8, opacity: 0.85, fontSize: 13 }}>
               {errorMessage}
             </div>
           )}
           <button type="button" style={buttonStyle} onClick={() => void authenticate()}>
             {t("passkey_auth_retry")}
           </button>
-        </>
+        </div>
       )}
     </div>
   );

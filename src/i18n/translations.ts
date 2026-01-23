@@ -37,12 +37,18 @@ export const translations = {
     weekly_using_title: "주간 티켓 사용 시도 중",
     weekly_no_ticket_title: "주간 티켓 미보유",
     weekly_use_failed_title: "주간 티켓 사용 실패",
-    weekly_checking_message: "Check 요청 중입니다. 잠시만 기다려 주세요.",
-    weekly_using_message: "Use 요청 중입니다. 잠시만 기다려 주세요.",
 
     // Auth cancel
     auth_cancel_title: "인증 취소",
     auth_cancel_message: "인증이 취소 되었습니다",
+
+    // Error codes (standardized)
+    error_no_credentials_title: "패스키 등록 필요",
+    error_no_credentials_message: "패스키 등록 후 다시 시도해 주세요.",
+    error_pending_registration_title: "패스키 등록 진행 중",
+    error_pending_registration_message: "패스키 등록 절차가 진행 중입니다. 완료 후 다시 시도해 주세요.",
+    error_relayer_title: "네트워크/릴레이 오류",
+    error_relayer_message: "요청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
   },
 
   en: {
@@ -83,12 +89,18 @@ export const translations = {
     weekly_using_title: "Using weekly ticket…",
     weekly_no_ticket_title: "No weekly ticket",
     weekly_use_failed_title: "Failed to use weekly ticket",
-    weekly_checking_message: "Calling Check. Please wait…",
-    weekly_using_message: "Calling Use. Please wait…",
 
     // Auth cancel
     auth_cancel_title: "Authentication cancelled",
     auth_cancel_message: "Authentication was cancelled.",
+
+    // Error codes (standardized)
+    error_no_credentials_title: "Passkey required",
+    error_no_credentials_message: "Please register a passkey and try again.",
+    error_pending_registration_title: "Passkey registration pending",
+    error_pending_registration_message: "Passkey registration is in progress. Please try again later.",
+    error_relayer_title: "Network/Relayer error",
+    error_relayer_message: "Something went wrong. Please try again shortly.",
   },
 } as const;
 

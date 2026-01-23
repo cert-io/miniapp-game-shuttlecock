@@ -4,7 +4,13 @@ import { GAME_CONFIG } from './constants/gameConfig';
 import { useGameLoop } from './hooks/useGameLoop';
 import { useCollision } from './hooks/useCollision';
 import { useSound } from './hooks/useSound';
-import { executeCheck, executeUseFrom, fetch1155ImplementationAddress } from './sdk/asset1155';
+import {
+  executeCheck,
+  executeUseFrom,
+  fetch1155ImplementationAddress,
+  normalizeSdkError,
+  SdkErrorCode,
+} from './sdk/asset1155';
 import { Shuttlecock } from './components/Shuttlecock';
 import { Pipe } from './components/Pipe';
 import { Coin } from './components/Coin';
@@ -17,28 +23,6 @@ import { SeededRandom, getHourlySeedUTC, getWeeklySeedUTC } from './utils/seeded
 import { gameContainerStyle, gameCanvasStyle, cloudBackgroundStyle } from './constants/styles';
 import { useI18n } from './i18n/useI18n';
 
-const isPasskeyUserCancelled = (e: unknown): boolean => {
-  // WebAuthn 취소는 보통 DOMException(NotAllowedError)로 떨어짐
-  if (typeof e === 'object' && e !== null) {
-    const anyErr = e as { name?: unknown; message?: unknown; code?: unknown };
-    const name = typeof anyErr.name === 'string' ? anyErr.name : '';
-    const message = typeof anyErr.message === 'string' ? anyErr.message : '';
-
-    if (name === 'NotAllowedError' || name === 'AbortError') return true;
-    // 브라우저별 메시지 변형 방어
-    const combined = `${name} ${message}`;
-    return (
-      combined.includes('NotAllowedError') ||
-      combined.includes('AbortError') ||
-      combined.includes('The operation either timed out or was not allowed') ||
-      combined.includes('The request is not allowed') ||
-      combined.includes('User cancelled') ||
-      combined.includes('cancelled')
-    );
-  }
-  return false;
-};
-
 const App: React.FC = () => {
   const { t } = useI18n();
   // 동적 게임 크기
@@ -50,7 +34,7 @@ const App: React.FC = () => {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [weeklyUseState, setWeeklyUseState] = useState<'idle' | 'checking' | 'using' | 'error'>('idle');
   const [weeklyUseError, setWeeklyUseError] = useState<string | null>(null);
-  const [weeklyErrorTitle, setWeeklyErrorTitle] = useState(t('weekly_use_failed_title'));
+  const [weeklyErrorTitle, setWeeklyErrorTitle] = useState('');
   const [weeklyFailStage, setWeeklyFailStage] = useState<'check' | 'use' | null>(null);
   const weeklyParamsRef = useRef<{
     implementationAddress: any;
@@ -155,6 +139,43 @@ const App: React.FC = () => {
     setSeedInfo({ seed });
   }, []);
 
+  const applyWeeklyError = useCallback(
+    (stage: 'check' | 'use', err: ReturnType<typeof normalizeSdkError>) => {
+      setWeeklyUseState('error');
+      setWeeklyFailStage(stage);
+
+      if (err.code === SdkErrorCode.PASSKEY_CANCELLED) {
+        setWeeklyUseError(t('auth_cancel_message'));
+        setWeeklyErrorTitle(t('auth_cancel_title'));
+        return;
+      }
+      if (err.code === SdkErrorCode.NO_CREDENTIALS) {
+        setWeeklyUseError(t('error_no_credentials_message'));
+        setWeeklyErrorTitle(t('error_no_credentials_title'));
+        return;
+      }
+      if (err.code === SdkErrorCode.PENDING_PASSKEY_REGISTRATION) {
+        setWeeklyUseError(t('error_pending_registration_message'));
+        setWeeklyErrorTitle(t('error_pending_registration_title'));
+        return;
+      }
+      if (err.code === SdkErrorCode.NO_TICKET || stage === 'check') {
+        setWeeklyUseError(err.message);
+        setWeeklyErrorTitle(t('weekly_no_ticket_title'));
+        return;
+      }
+      if (err.code === SdkErrorCode.RELAYER_ERROR) {
+        setWeeklyUseError(err.message || t('error_relayer_message'));
+        setWeeklyErrorTitle(t('weekly_use_failed_title'));
+        return;
+      }
+
+      setWeeklyUseError(err.message);
+      setWeeklyErrorTitle(stage === 'use' ? t('weekly_use_failed_title') : t('weekly_no_ticket_title'));
+    },
+    [t]
+  );
+
   const getWeeklyChallengeParams = useCallback(async () => {
     // 템플릿 SDK의 use1155ImplementationAddress와 동일한 API로 구현 주소를 조회
     const impl = await fetch1155ImplementationAddress();
@@ -195,11 +216,13 @@ const App: React.FC = () => {
     setWeeklyErrorTitle(t('weekly_checking_title'));
     setWeeklyFailStage(null);
 
+    let stage: 'check' | 'use' = 'check';
     try {
       const params = await getWeeklyChallengeParams();
       weeklyParamsRef.current = params;
 
       // 1) Check
+      stage = 'check';
       setWeeklyErrorTitle(t('weekly_checking_title'));
       await executeCheck({
         implementationAddress: params.implementationAddress,
@@ -209,6 +232,7 @@ const App: React.FC = () => {
       });
 
       // 2) Use
+      stage = 'use';
       setWeeklyUseState('using');
       setWeeklyErrorTitle(t('weekly_using_title'));
       await executeUseFrom({
@@ -218,19 +242,8 @@ const App: React.FC = () => {
         amount: params.amount,
       });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setWeeklyUseState('error');
-      if (isPasskeyUserCancelled(e)) {
-        setWeeklyUseError(t('auth_cancel_message'));
-        setWeeklyErrorTitle(t('auth_cancel_title'));
-      } else {
-        setWeeklyUseError(msg);
-        setWeeklyErrorTitle(
-          weeklyUseState === 'using' ? t('weekly_use_failed_title') : t('weekly_no_ticket_title')
-        );
-      }
-      // 어떤 단계에서 실패했는지(다시시도 로직용)
-      setWeeklyFailStage(weeklyUseState === 'using' ? 'use' : 'check');
+      const err = normalizeSdkError(e, { stage });
+      applyWeeklyError(stage, err);
       // 시작 화면으로 복귀
       setCountdown(null);
       setGameState('ready');
@@ -245,7 +258,7 @@ const App: React.FC = () => {
     setCountdown(3);
     setGameState('countdown');
     setWeeklyUseState('idle');
-  }, [ensureSeed, getWeeklyChallengeParams, resetGame]);
+  }, [applyWeeklyError, ensureSeed, getWeeklyChallengeParams, resetGame, t]);
 
   // countdown 진행
   useEffect(() => {
@@ -587,11 +600,12 @@ const App: React.FC = () => {
           <Modal
             open={weeklyUseState !== 'idle'}
             title={weeklyErrorTitle}
+            titleAlign={weeklyUseState === 'error' ? 'left' : 'center'}
             message={
               weeklyUseState === 'checking'
-                ? t('weekly_checking_message')
+                ? ''
                 : weeklyUseState === 'using'
-                  ? t('weekly_using_message')
+                  ? ''
                   : weeklyUseError ?? t('common_unknown_error')
             }
             actions={
@@ -610,6 +624,7 @@ const App: React.FC = () => {
                           setWeeklyErrorTitle(t('weekly_using_title'));
                           setWeeklyFailStage(null);
                           void (async () => {
+                            const stage: 'use' = 'use';
                             try {
                               await executeUseFrom({
                                 implementationAddress: params.implementationAddress,
@@ -625,16 +640,8 @@ const App: React.FC = () => {
                               setGameState('countdown');
                               setWeeklyUseState('idle');
                             } catch (e) {
-                              const msg = e instanceof Error ? e.message : String(e);
-                              setWeeklyUseState('error');
-                              setWeeklyFailStage('use');
-                              if (isPasskeyUserCancelled(e)) {
-                                setWeeklyUseError(t('auth_cancel_message'));
-                                setWeeklyErrorTitle(t('auth_cancel_title'));
-                              } else {
-                                setWeeklyUseError(msg);
-                                setWeeklyErrorTitle(t('weekly_use_failed_title'));
-                              }
+                              const err = normalizeSdkError(e, { stage });
+                              applyWeeklyError('use', err);
                             }
                           })();
                           return;

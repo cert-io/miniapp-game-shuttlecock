@@ -10,6 +10,7 @@ import { authenticatePasskey } from "./webauthn";
 import { sepolia } from "./chain";
 import { OPFMainAbi } from "./abi/OPFMain";
 import { parseApiResponse } from "./api";
+import { SdkError, SdkErrorCode, isPasskeyUserCancelled } from "./errors";
 
 // NOTE:
 // - 이 게임 프로젝트에 SDK를 "충돌 없이" 탑재하기 위해, 템플릿의 lib/contracts.ts를 그대로 격리 복사.
@@ -99,12 +100,28 @@ export async function buildExecuteWithWebAuthnPayload(
     })) as Hex;
   } catch (err) {
     if (isPendingRegistrationError(err)) {
-      throw new Error(PENDING_REGISTRATION_MESSAGE);
+      throw new SdkError({
+        code: SdkErrorCode.PENDING_PASSKEY_REGISTRATION,
+        message: PENDING_REGISTRATION_MESSAGE,
+        cause: err,
+      });
     }
     throw err;
   }
 
-  const auth = await authenticatePasskey(credentialId, hash as Hex);
+  let auth: Awaited<ReturnType<typeof authenticatePasskey>>;
+  try {
+    auth = await authenticatePasskey(credentialId, hash as Hex);
+  } catch (err) {
+    if (isPasskeyUserCancelled(err)) {
+      throw new SdkError({
+        code: SdkErrorCode.PASSKEY_CANCELLED,
+        message: "Authentication cancelled",
+        cause: err,
+      });
+    }
+    throw err;
+  }
 
   const innerSignature = encodeAbiParameters(WEBAUTHN_SIG_PARAM, [
     auth.userVerificationRequired,
