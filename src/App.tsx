@@ -524,20 +524,12 @@ const App: React.FC = () => {
       }
 
       e.preventDefault();
-      
-      if (gameState === 'ready') {
-        startGame();
-      } else if (gameState === 'countdown') {
-        // 카운트다운 중 입력 무시
-      } else if (gameState === 'playing') {
-        jump();
-      } else if (gameState === 'gameOver') {
-        if (gameMode === 'weekly') {
-          void startWeeklyChallenge();
-        } else {
-          startGame();
-        }
-      }
+
+      // 배경 클릭/키 입력으로는 게임을 시작하지 않음.
+      // 오직 UI 버튼(시작하기/주간 도전/다시 시작)으로만 시작.
+      if (gameState !== 'playing') return;
+
+      jump();
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {

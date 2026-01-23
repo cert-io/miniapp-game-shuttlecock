@@ -106,18 +106,18 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
         {(() => {
           try {
             const stored = localStorage.getItem('cert_credentials');
-            if (!stored) return `${t('wallet_label')}: ${t('wallet_not_logged_in')}`;
+            if (!stored) return `${t('wallet_not_logged_in')}`;
             const parsed = JSON.parse(stored) as { account?: string };
             const account = parsed.account ?? '';
             if (!account || !account.startsWith('0x') || account.length < 12) {
-              return `${t('wallet_label')}: ${account || t('wallet_unknown')}`;
+              return `${account || t('wallet_unknown')}`;
             }
             // 0x + 5자리 + ... + 마지막 5자리
             const head = account.slice(0, 2 + 5);
             const tail = account.slice(-5);
-            return `${t('wallet_label')}: ${head}...${tail}`;
+            return `${head}...${tail}`;
           } catch {
-            return `${t('wallet_label')}: ${t('wallet_invalid')}`;
+            return `${t('wallet_invalid')}`;
           }
         })()}
       </div>
