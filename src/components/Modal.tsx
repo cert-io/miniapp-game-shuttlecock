@@ -12,6 +12,13 @@ type ModalProps = {
   message: string;
   actions?: ModalAction[];
   titleAlign?: "left" | "center";
+  children?: React.ReactNode;
+  /** card max width (default: 560) */
+  maxWidthPx?: number;
+  /** card min height (default: none) */
+  minHeightPx?: number;
+  /** override content container style (useful for dropdown overflow, etc.) */
+  contentStyle?: React.CSSProperties;
 };
 
 export const Modal: React.FC<ModalProps> = ({
@@ -20,6 +27,10 @@ export const Modal: React.FC<ModalProps> = ({
   message,
   actions,
   titleAlign = "left",
+  children,
+  maxWidthPx = 560,
+  minHeightPx,
+  contentStyle,
 }) => {
   const overlayStyle = useMemo<React.CSSProperties>(
     () => ({
@@ -39,15 +50,18 @@ export const Modal: React.FC<ModalProps> = ({
 
   const cardStyle = useMemo<React.CSSProperties>(
     () => ({
-      width: "min(560px, 100%)",
+      width: `min(${maxWidthPx}px, 100%)`,
       backgroundColor: "#0b1020",
       border: "1px solid rgba(255,255,255,0.12)",
       borderRadius: 14,
       padding: 18,
       color: "white",
       boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+      display: "flex",
+      flexDirection: "column",
+      ...(typeof minHeightPx === "number" ? { minHeight: `${minHeightPx}px` } : {}),
     }),
-    []
+    [maxWidthPx, minHeightPx]
   );
 
   const titleStyle = useMemo<React.CSSProperties>(
@@ -72,6 +86,7 @@ export const Modal: React.FC<ModalProps> = ({
       borderRadius: 10,
       backgroundColor: "rgba(255,255,255,0.06)",
       padding: 12,
+      flex: "1 1 auto",
     }),
     []
   );
@@ -108,9 +123,13 @@ export const Modal: React.FC<ModalProps> = ({
     >
       <div style={cardStyle} onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}>
         <div style={titleStyle}>{title}</div>
-        {message.trim().length > 0 && <div style={messageStyle}>{message}</div>}
+        {children ? (
+          <div style={{ ...messageStyle, ...contentStyle }}>{children}</div>
+        ) : (
+          message.trim().length > 0 && <div style={messageStyle}>{message}</div>
+        )}
         {actions && actions.length > 0 && (
-          <div style={{ display: "flex", gap: 12, marginTop: 14 }}>
+          <div style={{ display: "flex", gap: 12, marginTop: "auto", paddingTop: 14 }}>
             {actions.map((a) => (
               <button
                 key={a.label}

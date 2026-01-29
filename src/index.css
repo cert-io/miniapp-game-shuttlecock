@@ -59,3 +59,103 @@ button {
 html, body {
   overscroll-behavior: none;
 }
+
+/* Settings UI (namespaced) */
+:root {
+  --border: rgba(255, 255, 255, 0.16);
+  --panel2: rgba(255, 255, 255, 0.06);
+  --text: rgba(255, 255, 255, 0.96);
+  --select-option-bg: rgba(11, 16, 32, 0.98);
+  --shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.nc-input,
+.nc-select,
+.nc-dropdownButton {
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  color: var(--text);
+  padding: 0 12px;
+  outline: none;
+}
+
+.nc-input:focus,
+.nc-select:focus,
+.nc-dropdownButton:focus {
+  border-color: rgba(37, 99, 235, 0.5);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
+}
+
+.nc-dropdown {
+  position: relative;
+}
+
+.nc-dropdownButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  padding-left: 12px;
+  padding-right: 14px; /* chevron이 너무 끝으로 붙지 않게 */
+}
+
+.nc-dropdownValue {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.nc-dropdownValueText {
+  font-size: 14px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nc-dropdownChevron {
+  width: 22px;
+  height: 22px;
+  opacity: 0.9;
+  flex: 0 0 auto;
+}
+
+.nc-dropdownMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--select-option-bg); /* 메뉴 배경 불투명 */
+  box-shadow: var(--shadow);
+  padding: 6px;
+  /* Language 항목 수가 적으므로 스크롤/최대높이 제한 제거 */
+  max-height: none;
+  overflow: visible;
+}
+
+.nc-dropdownItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.nc-dropdownItem:hover {
+  background: rgba(37, 99, 235, 0.08);
+}

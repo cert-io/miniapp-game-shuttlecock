@@ -4,13 +4,10 @@ import { GAME_CONFIG } from './constants/gameConfig';
 import { useGameLoop } from './hooks/useGameLoop';
 import { useCollision } from './hooks/useCollision';
 import { useSound } from './hooks/useSound';
-import {
-  executeCheck,
-  executeUseFrom,
-  fetch1155ImplementationAddress,
-  normalizeSdkError,
-  SdkErrorCode,
-} from './sdk/asset1155';
+import { executeCheck } from './sdk/asset1155/features/check/executeCheck';
+import { executeUseFrom } from './sdk/asset1155/features/use/executeUseFrom';
+import { fetch1155ImplementationAddress } from './sdk/asset1155/hooks/fetchImplementationAddress';
+import { normalizeSdkError, SdkErrorCode } from './sdk/asset1155/lib/errors';
 import { Shuttlecock } from './components/Shuttlecock';
 import { Pipe } from './components/Pipe';
 import { Coin } from './components/Coin';
@@ -78,7 +75,6 @@ const App: React.FC = () => {
   const coinIdCounter = useRef(0);
   const lastPipeSpawn = useRef(0);
   const seededRandom = useRef<SeededRandom | null>(null);
-  const [seedInfo, setSeedInfo] = useState(() => ({ seed: hourlySeedAtAppStart }));
   const { checkCollision } = useCollision(gameHeight);
   
   // 배드민턴 타격 사운드
@@ -149,7 +145,6 @@ const App: React.FC = () => {
     } else {
       seededRandom.current.setSeed(seed);
     }
-    setSeedInfo({ seed });
   }, []);
 
   const applyWeeklyError = useCallback(
@@ -603,7 +598,6 @@ const App: React.FC = () => {
             }}
             onWeeklyChallenge={() => void startWeeklyChallenge()}
             onExit={exitToStart}
-            seed={seedInfo.seed}
           />
 
           {/* 주간 도전 SDK 팝업 (로딩/실패 전부 모달로) */}

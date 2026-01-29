@@ -5,6 +5,13 @@ export const translations = {
     common_retry: "다시시도",
     common_unknown_error: "알 수 없는 오류",
 
+    // Settings
+    settings_title: "환경설정",
+    settings_language: "언어",
+    settings_lang_ko: "한국어",
+    settings_lang_en: "English",
+    settings_apply: "적용",
+
     // Wallet
     wallet_label: "지갑",
     wallet_not_logged_in: "(로그인 안됨)",
@@ -56,6 +63,13 @@ export const translations = {
     common_close: "Close",
     common_retry: "Retry",
     common_unknown_error: "Unknown error",
+
+    // Settings
+    settings_title: "Settings",
+    settings_language: "Language",
+    settings_lang_ko: "Korean",
+    settings_lang_en: "English",
+    settings_apply: "Apply",
 
     // Wallet
     wallet_label: "Wallet",

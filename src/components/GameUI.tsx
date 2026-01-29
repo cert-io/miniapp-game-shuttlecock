@@ -1,6 +1,7 @@
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GameState } from '../types/game';
-import { useI18n } from '../i18n/useI18n';
+import { notifyLocaleChanged, useI18n } from '../i18n/useI18n';
+import { Modal } from './Modal';
 
 interface GameUIProps {
   score: number;
@@ -47,20 +48,28 @@ const scoreStyle: React.CSSProperties = {
   userSelect: 'none'
 };
 
-const seedInfoStyle: React.CSSProperties = {
+const settingsButtonStyle: React.CSSProperties = {
   position: 'absolute',
   top: 10,
   right: 10,
-  fontSize: 14,
-  color: 'white',
-  backgroundColor: 'rgba(0,0,0,0.5)',
-  padding: '8px 12px',
-  borderRadius: 5,
-  textShadow: '1px 1px 0 #000',
-  zIndex: 10,
+  // 항상 최상단(UI 오버레이보다 위), 단 Modal(99999)보다는 아래
+  zIndex: 1000,
+  width: 56,
+  height: 56,
+  padding: 0,
+  border: 'none',
+  backgroundColor: 'transparent',
+  cursor: 'pointer',
   userSelect: 'none',
-  fontFamily: 'monospace',
-  fontWeight: 'bold'
+};
+
+const settingsIconStyle: React.CSSProperties = {
+  width: 40,
+  height: 40,
+  display: 'block',
+  margin: '8px',
+  pointerEvents: 'none',
+  filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.55))',
 };
 
 const overlayStyle: React.CSSProperties = {
@@ -87,8 +96,75 @@ const buttonBaseStyle: React.CSSProperties = {
   fontWeight: 'bold'
 };
 
-const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, onStart, onWeeklyChallenge, onExit, seed }) => {
+const LOCALE_STORAGE_KEY = "miniapp_locale";
+
+const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, onStart, onExit }) => {
   const { t } = useI18n();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
+  const languageDropdownRef = useRef<HTMLDivElement | null>(null);
+  const [pendingLocale, setPendingLocale] = useState<"ko" | "en">(() => {
+    try {
+      const saved = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+      return saved === "ko" || saved === "en" ? saved : "en";
+    } catch {
+      return "en";
+    }
+  });
+
+  const localeOptions = useMemo(
+    () =>
+      [
+        { value: "en" as const, label: t('settings_lang_en') },
+        { value: "ko" as const, label: t('settings_lang_ko') },
+      ],
+    [t]
+  );
+
+  const pendingLocaleLabel = useMemo(() => {
+    return localeOptions.find((o) => o.value === pendingLocale)?.label ?? pendingLocale;
+  }, [localeOptions, pendingLocale]);
+
+  useEffect(() => {
+    if (!settingsOpen) {
+      setLanguageDropdownOpen(false);
+      return;
+    }
+    setLanguageDropdownOpen(false);
+  }, [settingsOpen]);
+
+  useEffect(() => {
+    if (!languageDropdownOpen) return;
+
+    const onDocMouseDown = (e: MouseEvent) => {
+      const el = languageDropdownRef.current;
+      if (!el) return;
+      if (e.target instanceof Node && !el.contains(e.target)) {
+        setLanguageDropdownOpen(false);
+      }
+    };
+
+    const onDocKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLanguageDropdownOpen(false);
+    };
+
+    document.addEventListener('mousedown', onDocMouseDown);
+    document.addEventListener('keydown', onDocKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onDocMouseDown);
+      document.removeEventListener('keydown', onDocKeyDown);
+    };
+  }, [languageDropdownOpen]);
+
+  const applyLocale = useCallback((locale: "ko" | "en") => {
+    try {
+      window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+      // 리로드 없이 현재 화면에서 바로 반영 (모달 유지)
+      notifyLocaleChanged();
+    } catch {
+      // noop
+    }
+  }, []);
 
   // 버튼 상호작용 최적화
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
@@ -122,6 +198,22 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
         })()}
       </div>
 
+      {/* 우측 상단: 환경설정 버튼 (언어 변경) */}
+      <button
+        type="button"
+        style={settingsButtonStyle}
+        aria-label={t('settings_title')}
+        onClick={() => setSettingsOpen(true)}
+      >
+        {/* setting.png 미사용: 깔끔한 인라인 SVG 아이콘 */}
+        <svg viewBox="0 0 24 24" style={settingsIconStyle} aria-hidden="true">
+          <path
+            fill="rgba(255,255,255,0.96)"
+            d="M19.14,12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.4.12-.61l-1.92-3.32c-.11-.21-.36-.3-.58-.22l-2.39.96c-.5-.38-1.04-.69-1.64-.92l-.36-2.54C14.38,2.18,14.2,2,13.97,2h-3.94C9.8,2,9.62,2.18,9.59,2.41l-.36,2.54c-.6.23-1.15.54-1.64.92l-2.39-.96c-.22-.08-.47.01-.58.22L2.7,8.87c-.11.21-.06.47.12.61l2.03,1.58C4.81,11.37,4.79,11.69,4.79,12s.02.63.06.94l-2.03,1.58c-.18.14-.23.4-.12.61l1.92,3.32c.11.21.36.3.58.22l2.39-.96c.5.38,1.04.69,1.64.92l.36,2.54c.03.23.21.41.44.41h3.94c.23,0,.41-.18.44-.41l.36-2.54c.6-.23,1.15-.54,1.64-.92l2.39.96c.22.08.47-.01.58-.22l1.92-3.32c.11-.21.06-.47-.12-.61l-2.03-1.58ZM12,15.5c-1.93,0-3.5-1.57-3.5-3.5s1.57-3.5,3.5-3.5s3.5,1.57,3.5,3.5s-1.57,3.5-3.5,3.5Z"
+          />
+        </svg>
+      </button>
+
       {/* 점수 표시 */}
       <div style={scoreStyle}>
         {score}
@@ -144,13 +236,6 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
       >
         {t('game_coins')}: {coinScore}
       </div>
-
-      {/* 데일리 시드 정보 */}
-      {seed && (
-        <div style={seedInfoStyle}>
-          #{seed}
-        </div>
-      )}
 
       {/* 시작 화면 */}
       {gameState === 'ready' && (
@@ -184,14 +269,6 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
               onMouseUp={handleMouseUp}
             >
               {t('btn_start')}
-            </button>
-            <button
-              onClick={onWeeklyChallenge}
-              style={{ ...buttonBaseStyle, backgroundColor: '#2196F3', padding: '15px 28px' }}
-              onMouseDown={handleMouseDown}
-              onMouseUp={handleMouseUp}
-            >
-              {t('btn_weekly')}
             </button>
           </div>
           <p
@@ -261,6 +338,70 @@ const GameUIComponent: React.FC<GameUIProps> = ({ score, coinScore, gameState, o
           </div>
         </div>
       )}
+
+      {/* 환경설정 모달 */}
+      <Modal
+        open={settingsOpen}
+        title={t('settings_title')}
+        titleAlign="left"
+        message=""
+        maxWidthPx={420}
+        minHeightPx={360}
+        // 드롭다운 메뉴가 컨텐츠 영역 밖으로도 자연스럽게 뜨도록 overflow를 풀어준다.
+        contentStyle={{
+          maxHeight: 'none',
+          overflow: 'visible',
+        }}
+        actions={[
+          { label: t('common_close'), variant: 'secondary', onClick: () => setSettingsOpen(false) },
+          { label: t('settings_apply'), variant: 'primary', onClick: () => applyLocale(pendingLocale) },
+        ]}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, opacity: 0.95, flex: '0 0 auto' }}>
+              {t('settings_language')}
+            </div>
+
+            <div className="nc-dropdown" ref={languageDropdownRef} style={{ width: 220, maxWidth: '60%' }}>
+              <button
+                type="button"
+                className="nc-dropdownButton"
+                onClick={() => setLanguageDropdownOpen((v) => !v)}
+              >
+                <span className="nc-dropdownValue">
+                  <span className="nc-dropdownValueText">{pendingLocaleLabel}</span>
+                </span>
+                <svg className="nc-dropdownChevron" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    fill="currentColor"
+                    d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"
+                  />
+                </svg>
+              </button>
+
+              {languageDropdownOpen && (
+                <div className="nc-dropdownMenu" role="listbox">
+                  {localeOptions.map((o) => (
+                    <button
+                      key={o.value}
+                      type="button"
+                      className="nc-dropdownItem"
+                      onClick={() => {
+                        setPendingLocale(o.value);
+                        setLanguageDropdownOpen(false);
+                      }}
+                    >
+                      <span className="nc-dropdownValueText">{o.label}</span>
+                      {pendingLocale === o.value ? <span aria-hidden="true">✓</span> : <span />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 };
